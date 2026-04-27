@@ -1,23 +1,40 @@
-# Darcy-Forchheimer Porosity Analyzer for OpenFOAM
+# Darcy-Forchheimer Porosity Analyzer 
 
-A Python-based standalone analytical solver that replicates OpenFOAM's `explicitPorositySource` tensor mathematics. 
+A Python-based **algebraic model** (single-point calculator) that aims to replicate OpenFOAM's `explicitPorositySource` tensor transformations. 
 
-This tool is designed to try to help CFD engineers debug, visualize, and tune Darcy-Forchheimer porous media coefficients (e.g., for modeling cooling fans, radiators, or flow straighteners) without needing to run computationally expensive 3D simulations.
+This tool is designed to help CFD engineers debug mass flow choking and unphysical pressure spikes caused by poorly tuned transverse resistance coefficients in complex aerodynamic models (e.g., automotive cooling packs, radiators, and pitched fans).
 
- The Problem: The "Brick Wall" Pressure Drop
-When setting up directional porous zones in OpenFOAM, it is standard practice to apply artificially high resistance coefficients in the transverse directions ($y$ and $z$) to prevent cross-flow. 
+## 🛑 The Problem: The "Brick Wall" Bug
+Many academic tutorials suggest using astronomically high coefficients (e.g., $10^7$) for transverse directions to enforce flow directionality. While this works in simple straight ducts, applying these "brick wall" coefficients to real-world models with sideways cross-flows (like an engine bay) causes the Navier-Stokes solver to artificially kill the kinetic energy, destroying mass conservation.
 
-However, if the bulk flow is slightly misaligned with the porous zone's local coordinate system (e.g., due to a physical pitch angle or numerical noise), OpenFOAM takes that slight transverse velocity and multiplies it by the massive transverse resistance coefficient. 
+Industry standards (such as those in commercial solver documentation) recommend using a **100x to 1000x multiplier** on the Forchheimer (inertial) term to smoothly guide the flow without crashing the solver. This repository provides the tools to test and visualize those coefficients *before* running a computationally expensive simulation.
 
-Because the viscous Darcy term is linear, it does not drop off at near-zero velocities:
-$$S = - \left( \nu D + \frac{1}{2} |U| F \right) U$$
+---
 
-This results in a massive, unphysical pressure spike across the porous zone, even as the bulk velocity approaches zero.
+## 🛠️ The Tools
 
-## The Solution##
-This script replicates the C++ source code architecture of OpenFOAM's `axesRotation` and local-to-global tensor transformations. By providing your exact $D$ and $F$ vectors, along with your geometric flow vectors ($e_1$ and $e_2$), you can plot the exact momentum sink curve and verify that your coordinate rotation safely passes the bulk flow while blocking transverse noise.
+### 1. `porous_engine.py` (The Core Engine)
+A faithful Python replication of the OpenFOAM C++ source code. It handles the local-to-global tensor transformations (`axesRotation`) and computes the exact momentum sink vector ($S_x, S_y, S_z$) for any given fluid velocity.
 
-## Features
-* **Faithful OpenFOAM Replication:** Translates OpenFOAM's local coordinate transformation matrix ($E$) into `numpy` array operations.
-* **Component-wise Sink Evaluation:** Calculates both Viscous (linear) and Inertial (quadratic) pressure drops.
-* **Misalignment Testing:** Sweep through velocity magnitudes and inject artificial transverse velocity to see exactly when and where your porous zone will cause a pressure spike.
+### 2. `fan_curve_analyzer.py` (Velocity Sweep)
+Tests your coefficients across a range of bulk velocities (e.g., 0.1 to 1.0 m/s). 
+* Isolates the intended streamwise resistance ($S_x$) from the artificial transverse resistance ($S_y, S_z$).
+* Plots the total pressure drop magnitude $|S|$.
+* Handles **negative Darcy coefficients** (often used to simulate active fans/pumps), clearly showing the zero-crossing where the zone stops pumping and starts acting as a brake.
+
+### 3. `yaw_sweep_analyzer.py` (Angle Sweep)
+Tests your fan's sensitivity to sideways cross-flow.
+* Locks the total velocity magnitude (e.g., 5 m/s) and sweeps the incoming flow angle from 0° (perfectly aligned) to 90° (fully sideways).
+* Reveals if your transverse Darcy/Forchheimer coefficients are set too high, allowing you to tune them to the industry-standard 100x multiplier before running your 3D mesh.
+
+--- 
+
+**Running the Analyzers:**
+Simply open either analyzer script, edit the `d_coeffs`, `f_coeffs`, and `pitch` variables in the Setup section to match your OpenFOAM `fvOptions` dictionary, and run:
+
+```bash
+python fan_curve_analyzer.py
+# or
+python yaw_sweep_analyzer.py
+```
+
