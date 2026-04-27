@@ -28,6 +28,8 @@ Tests your fan's sensitivity to sideways cross-flow.
 * Reveals if your transverse Darcy/Forchheimer coefficients are set too high, allowing you to tune them to the industry-standard 100x multiplier before running your 3D mesh.
 
 --- 
+⚠️ Important Note: Sink Magnitude (Pa/m) vs. Actual Pressure Drop (Pa)It is critical to note that the output of these tools is the Momentum Sink Magnitude ($|S|$), which has units of Pascals per meter (Pa/m). It represents the resistance density.To calculate the actual total pressure drop ($\Delta P$) your fluid will experience in the 3D OpenFOAM simulation, you must multiply the tool's output by the physical thickness ($L$) of your meshed cellZone:$$ \Delta P = |S| \times L $$Example: If the analyzer predicts a total magnitude of 5000 Pa/m at a 20° cross-flow, and your modeled porous zone is 0.1 meters (10 cm) thick, your actual pressure drop across the zone will be 500 Pa.
+--- 
 
 **Running the Analyzers:**
 Simply open either analyzer script, edit the `d_coeffs`, `f_coeffs`, and `pitch` variables in the Setup section to match your OpenFOAM `fvOptions` dictionary, and run:
