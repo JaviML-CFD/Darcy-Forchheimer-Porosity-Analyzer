@@ -7,7 +7,7 @@ This tool is designed to help CFD engineers debug mass flow choking and unphysic
 ## 🛑 The Problem: The "Brick Wall" Bug
 Many academic tutorials suggest using astronomically high coefficients (e.g., $10^7$) for transverse directions to enforce flow directionality. While this works in simple straight ducts, applying these "brick wall" coefficients to real-world models with sideways cross-flows (like an engine bay) causes the Navier-Stokes solver to artificially kill the kinetic energy, destroying mass conservation.
 
-Industry standards (such as those in commercial solver documentation) recommend using a **100x to 1000x multiplier** on the Forchheimer (inertial) term to smoothly guide the flow without crashing the solver. This repository provides the tools to test and visualize those coefficients *before* running a computationally expensive simulation.
+Industry standards (such as those in commercial solver documentation) recommend using a **100x to 1000x multiplier** on the D-F terms to smoothly guide the flow without crashing the solver. This repository provides the tools to test and visualize those coefficients *before* running a computationally expensive simulation.
 
 ---
 
